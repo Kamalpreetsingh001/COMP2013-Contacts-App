@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import {useNavigate} from "react-router-dom";
 import ContactsCardsContainer from "./ContactsCardsContainer";
 import ContactForm from "./ContactForm";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 export default function ContactsApp() {
   //States
@@ -15,12 +18,31 @@ export default function ContactsApp() {
   });
   const [postResponse, setPostResponse] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-
+  const navigate = useNavigate();
+const [currentUser, setCurrentUser] = useState(() => {
+		const jwtToken = Cookies.get("jwt-authorization");
+		if (!jwtToken) {
+			return "";
+		}
+		try {
+			const decodedToken = jwtDecode(jwtToken);
+			return decodedToken.username;
+		} catch {
+			return "";
+		}
+	});
   //useEffect
   useEffect(() => {
     handleContactsDB();
   }, [postResponse]);
 
+
+  useEffect(() => {
+		if (!currentUser) {
+			navigate("/not-authorized");
+		}
+	}, []);
+  
   //Handlers
   //GET Data from DB handler
   const handleContactsDB = async () => {
@@ -120,9 +142,20 @@ export default function ContactsApp() {
     }
   };
 
+  
+
+  const handleLogout = () => {
+		Cookies.remove("jwt-authorization");
+		setCurrentUser("");
+		navigate("/");
+	};
+
+
   //Render
   return (
     <div>
+      <p>Welcome {currentUser} To the Private page</p>
+			<button onClick={() => handleLogout()}>Logout</button>
       <ContactForm
         name={formData.name}
         email={formData.email}
